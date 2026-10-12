@@ -12,7 +12,7 @@ import secrets
 import sqlite3
 import time
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, quote_plus, unquote
 
 import requests
 import streamlit as st
@@ -90,10 +90,26 @@ div[data-testid="stFormSubmitButton"] button[kind^="primary"]{background:linear-
 S = st.session_state
 
 # ---------- database: SQLite file on your computer, or MongoDB online ----------
+def _clean_uri(uri):
+    """Fixes common mistakes in the connection string: stray quotes, <password> brackets,
+    and special characters (@ # / etc.) in the username or password that must be URL-encoded."""
+    uri = uri.strip().strip("\"'").strip()
+    m = re.match(r"^(mongodb(?:\+srv)?://)(.*)$", uri)
+    if not m or "@" not in m.group(2):
+        return uri
+    scheme, rest = m.groups()
+    at = rest.rfind("@")
+    user, sep, pw = rest[:at].partition(":")
+    if pw.startswith("<") and pw.endswith(">"):
+        pw = pw[1:-1]
+    creds = quote_plus(unquote(user)) + (":" + quote_plus(unquote(pw)) if sep else "")
+    return f"{scheme}{creds}@{rest[at + 1:]}"
+
+
 @st.cache_resource
 def _mongo():
     from pymongo import MongoClient
-    db = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=8000)[MONGODB_DB]
+    db = MongoClient(_clean_uri(MONGODB_URI), serverSelectionTimeoutMS=8000)[MONGODB_DB]
     db.users.create_index("username", unique=True)
     db.posts.create_index([("username", 1), ("ts", -1)])
     return db
@@ -256,7 +272,10 @@ def auth_page():
             st.caption("New here? Choose **📝 Sign up** above to create your free account.")
             if go_login:
                 err = do_login(u, p)
-                st.error(err) if err else st.rerun()
+                if err:
+                    st.error(err)
+                else:
+                    st.rerun()
         else:
             with st.form("signup_form"):
                 st.markdown("#### 🎉 Create your account")
@@ -268,7 +287,10 @@ def auth_page():
             st.caption("Already have an account? Choose **🔑 Login** above.")
             if go_sign:
                 err = do_signup(u, p, p2, code)
-                st.error(err) if err else st.rerun()
+                if err:
+                    st.error(err)
+                else:
+                    st.rerun()
         st.caption("☁️ Your account is saved in the online database." if USE_MONGO
                    else "💾 Accounts are saved in a file on this computer (postpilot.db).")
 
