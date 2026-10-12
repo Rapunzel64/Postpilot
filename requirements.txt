@@ -1,5 +1,4 @@
 streamlit>=1.44
 requests>=2.31
 python-dotenv>=1.0
-# Optional: lets you download the image as PNG (needs the Cairo library installed)
-# cairosvg
+pymongo[srv]>=4.6

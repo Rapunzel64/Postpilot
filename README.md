@@ -17,17 +17,24 @@
 - Image styles (6) and two image sources: Gemini vector drawing, or a free AI picture (Pollinations)
 - Download images as PNG/SVG (vector) or JPG (AI picture)
 
-## Put it online (Streamlit Community Cloud, free)
-1. Create a free GitHub account and a new repository. Upload everything in this folder
-   EXCEPT `.env` and `history.json` (the included .gitignore already skips them).
-2. Go to https://share.streamlit.io, sign in with GitHub, click "Create app",
-   choose your repository, branch `main`, main file `app.py`, then Deploy.
-3. In the app's menu open Settings -> Secrets and paste the contents of
-   `.streamlit/secrets.toml.example` with your real key. Save. The app restarts.
-4. Share the app link.
+## Accounts and history
+Users sign up with a username and password. Passwords are never stored: only a salted hash is saved.
+Each account's posts and images are saved to a database, so they are there when the user logs in again.
+- Running on your computer: data goes into a local file `postpilot.db` (nothing to set up).
+- Deployed online: you MUST use a free MongoDB Atlas database, because the hosting disk is wiped when the app restarts.
 
-Public apps use YOUR free Gemini quota, so consider setting APP_PASSWORD and/or
-MAX_GENERATIONS in the secrets. Set HISTORY_MODE = "session" so visitors never see each other's posts.
+### Set up MongoDB Atlas (free)
+1. Create an account at https://www.mongodb.com/cloud/atlas and create a free cluster (M0 / "Free").
+2. Database Access -> Add New Database User. Choose a username and a password (letters and numbers only keeps it simple).
+3. Network Access -> Add IP Address -> "Allow access from anywhere" (0.0.0.0/0). Streamlit Cloud has no fixed IP address.
+4. Database -> Connect -> Drivers -> copy the connection string. Replace `<password>` with your database user's password.
+5. Put it in the app secrets as MONGODB_URI. A special character in the password (like @ or #) must be written URL-encoded (%40, %23).
+
+## Put it online (Streamlit Community Cloud, free)
+1. Upload everything in this folder to a GitHub repository EXCEPT `.env`, `postpilot.db`, `history.json`.
+2. At https://share.streamlit.io click Create app, pick the repository, branch `main`, file `app.py`.
+3. In Advanced settings -> Secrets paste the contents of `.streamlit/secrets.toml.example` with your real values.
+4. Deploy and share the link. Optional secrets: SIGNUP_CODE (invite code) and MAX_GENERATIONS.
 
 ## Notes
 - Free Gemini tier has limits and may use prompts to improve Google products: don't enter private information.

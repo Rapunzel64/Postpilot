@@ -1,11 +1,15 @@
 """PostPilot - LinkedIn Post Generator (Python + Streamlit + free Google Gemini API)."""
 import base64
 import concurrent.futures as cf
+import hashlib
+import hmac
 import html
 import json
 import os
 import random
 import re
+import secrets
+import sqlite3
 import time
 from pathlib import Path
 from urllib.parse import quote
@@ -19,9 +23,13 @@ load_dotenv()
 MODEL = os.getenv("MODEL", "gemini-flash-latest")
 # If the main model is busy or missing, these free models are tried next
 FALLBACK_MODELS = ["gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite"]
-HISTORY_FILE = Path(__file__).parent / "history.json"
-HISTORY_MODE = os.getenv("HISTORY_MODE", "file")  # "file" = save on this computer, "session" = per visitor (use when deployed)
-APP_PASSWORD = os.getenv("APP_PASSWORD", "")       # optional: protect a public app
+SIGNUP_CODE = os.getenv("SIGNUP_CODE", "")  # optional: people must enter this code to create an account
+MONGODB_URI = os.getenv("MONGODB_URI") or ""  # optional online database (needed when deployed)
+MONGODB_DB = os.getenv("MONGODB_DB", "postpilot")
+USE_MONGO = bool(MONGODB_URI)
+DB_FILE = Path(__file__).parent / "postpilot.db"  # used when MongoDB is not set up (local use)
+MAX_ITEMS = 30
+USERNAME_RE = re.compile(r"^[a-z0-9_.-]{3,30}$")
 MAX_GENERATIONS = int(os.getenv("MAX_GENERATIONS", "0") or 0)  # optional: limit per visitor session (0 = unlimited)
 
 TONES = {"Professional": "💼", "Inspirational": "🌟", "Conversational": "💬",
@@ -71,47 +79,205 @@ div.stButton>button[kind="primary"]{background:linear-gradient(120deg,#ff4d8d,#7
 .body{padding:10px 16px 14px;font-size:.97rem;line-height:1.55;word-wrap:break-word}
 .empty{color:#6b6485;padding:8px 16px 22px}
 .pimg{width:100%;display:block}
+.feat{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid #e4dffa;border-radius:14px;padding:12px 14px;margin-bottom:10px;box-shadow:0 6px 18px rgba(76,29,149,.08)}
+.feat span{font-size:1.6rem}
+div[data-testid="stForm"]{background:#fff;border:1px solid #e4dffa;border-radius:16px;padding:20px;box-shadow:0 12px 32px rgba(76,29,149,.14)}
+div[data-testid="stFormSubmitButton"] button[kind^="primary"]{background:linear-gradient(120deg,#ff4d8d,#7c3aed 55%,#2f7bff);border:0;color:#fff;font-weight:700;width:100%;padding:.6rem}
 .react{display:flex;justify-content:space-around;padding:10px;border-top:1px solid #e4dffa;color:#6b6485;font-size:.85rem}
 </style>
 """, unsafe_allow_html=True)
 
 S = st.session_state
 
-# ---------- optional password gate (for public deployments) ----------
-if APP_PASSWORD and not S.get("authed"):
-    st.markdown("## 🔒 PostPilot")
-    pw = st.text_input("Enter the password to continue", type="password")
-    if pw == APP_PASSWORD:
-        S.authed = True
-        st.rerun()
-    elif pw:
-        st.error("Wrong password.")
+# ---------- database: SQLite file on your computer, or MongoDB online ----------
+@st.cache_resource
+def _mongo():
+    from pymongo import MongoClient
+    db = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=8000)[MONGODB_DB]
+    db.users.create_index("username", unique=True)
+    db.posts.create_index([("username", 1), ("ts", -1)])
+    return db
+
+
+def _lite():
+    con = sqlite3.connect(DB_FILE)
+    con.execute("CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, salt TEXT NOT NULL, pw_hash TEXT NOT NULL, created REAL)")
+    con.execute("CREATE TABLE IF NOT EXISTS posts (id TEXT PRIMARY KEY, username TEXT NOT NULL, ts REAL, data TEXT NOT NULL)")
+    con.execute("CREATE INDEX IF NOT EXISTS posts_user ON posts(username)")
+    return con
+
+
+def _lite_run(sql, args=(), fetch=False):
+    con = _lite()
+    try:
+        cur = con.execute(sql, args)
+        rows = cur.fetchall() if fetch else None
+        con.commit()
+        return rows
+    finally:
+        con.close()
+
+
+def db_get_user(u):
+    if USE_MONGO:
+        return _mongo().users.find_one({"username": u}, {"_id": 0, "username": 1, "salt": 1, "pw_hash": 1})
+    rows = _lite_run("SELECT username, salt, pw_hash FROM users WHERE username=?", (u,), fetch=True)
+    return dict(zip(("username", "salt", "pw_hash"), rows[0])) if rows else None
+
+
+def db_create_user(u, salt, pw_hash):
+    """Returns False if the username already exists."""
+    if USE_MONGO:
+        from pymongo.errors import DuplicateKeyError
+        try:
+            _mongo().users.insert_one({"username": u, "salt": salt, "pw_hash": pw_hash, "created": time.time()})
+            return True
+        except DuplicateKeyError:
+            return False
+    try:
+        _lite_run("INSERT INTO users VALUES (?,?,?,?)", (u, salt, pw_hash, time.time()))
+        return True
+    except sqlite3.IntegrityError:
+        return False
+
+
+def db_load_history(u):
+    if USE_MONGO:
+        docs = _mongo().posts.find({"username": u}, {"item": 1, "_id": 0}).sort("ts", -1).limit(MAX_ITEMS)
+        return [d["item"] for d in docs]
+    rows = _lite_run("SELECT data FROM posts WHERE username=? ORDER BY ts DESC LIMIT ?", (u, MAX_ITEMS), fetch=True)
+    return [json.loads(x[0]) for x in rows]
+
+
+def db_save_item(u, item):
+    stored = dict(item)
+    if len(stored.get("img", "")) > 600000:  # keep the database small
+        stored["img"] = ""
+    if USE_MONGO:
+        _mongo().posts.replace_one({"_id": item["id"], "username": u},
+                                   {"_id": item["id"], "username": u, "ts": item["ts"], "item": stored}, upsert=True)
+    else:
+        _lite_run("INSERT OR REPLACE INTO posts VALUES (?,?,?,?)",
+                  (item["id"], u, item["ts"], json.dumps(stored, ensure_ascii=False)))
+
+
+def db_delete_item(u, pid):
+    if USE_MONGO:
+        _mongo().posts.delete_one({"_id": pid, "username": u})
+    else:
+        _lite_run("DELETE FROM posts WHERE id=? AND username=?", (pid, u))
+
+
+def db_clear(u):
+    if USE_MONGO:
+        _mongo().posts.delete_many({"username": u})
+    else:
+        _lite_run("DELETE FROM posts WHERE username=?", (u,))
+
+
+# ---------- accounts ----------
+def hash_pw(pw, salt_hex):
+    return hashlib.pbkdf2_hmac("sha256", pw.encode(), bytes.fromhex(salt_hex), 200_000).hex()
+
+
+def log_in(u):
+    S.user = u
+    S.history = db_load_history(u)
+
+
+def do_signup(u, pw, pw2, code):
+    u = (u or "").strip().lower()
+    if not USERNAME_RE.match(u):
+        return "Username must be 3-30 characters: letters, numbers, dot, dash or underscore."
+    if len(pw or "") < 8:
+        return "Password must be at least 8 characters."
+    if pw != pw2:
+        return "The two passwords do not match."
+    if SIGNUP_CODE and code != SIGNUP_CODE:
+        return "Wrong invite code."
+    try:
+        salt = secrets.token_hex(16)
+        if not db_create_user(u, salt, hash_pw(pw, salt)):
+            return "That username is already taken. Try another one, or log in."
+        log_in(u)
+    except Exception as e:
+        return f"Database problem: {e}"
+    return ""
+
+
+def do_login(u, pw):
+    now = time.time()
+    if S.get("lock_until", 0) > now:
+        return f"Too many tries. Please wait {int(S.lock_until - now) + 1} seconds."
+    u = (u or "").strip().lower()
+    try:
+        row = db_get_user(u) if USERNAME_RE.match(u) else None
+        ok = hmac.compare_digest(hash_pw(pw or "", row["salt"] if row else "00" * 16), row["pw_hash"] if row else "x")
+        if ok:
+            S.fails = 0
+            log_in(u)
+            return ""
+    except Exception as e:
+        return f"Database problem: {e}"
+    S.fails = S.get("fails", 0) + 1
+    if S.fails >= 5:
+        S.fails, S.lock_until = 0, now + 60
+    time.sleep(1)
+    return "Wrong username or password."
+
+
+def logout():
+    S.clear()
+
+
+def auth_page():
+    st.markdown('<div class="hero"><h1>Welcome to PostPilot 🚀</h1>'
+                '<p>Log in to write LinkedIn posts. Your history is saved to your account, so it is waiting for you every time you come back 🔓.</p></div>',
+                unsafe_allow_html=True)
+    left, right = st.columns([5, 4], gap="large")
+    with left:
+        st.markdown("### ✨ What you get")
+        for ico, title, desc in [
+            ("📝", "Posts in seconds", "Pick a tone and length, and get a ready-to-publish LinkedIn post."),
+            ("🎨", "Matching images", "Six image styles, drawn by AI for each post."),
+            ("🕘", "History that stays", "All your posts and favorites are saved to your account."),
+            ("⭐", "Edit, search, favorite", "Polish the text, search old posts and keep your best ones."),
+        ]:
+            st.markdown(f'<div class="feat"><span>{ico}</span><div><b>{title}</b><br>{desc}</div></div>', unsafe_allow_html=True)
+    with right:
+        mode = st.segmented_control("Account", ["🔑 Login", "📝 Sign up"], default="🔑 Login",
+                                    key="auth_mode", label_visibility="collapsed") or "🔑 Login"
+        if mode.endswith("Login"):
+            with st.form("login_form"):
+                st.markdown("#### 👋 Welcome back")
+                u = st.text_input("👤 Username")
+                p = st.text_input("🔒 Password", type="password")
+                go_login = st.form_submit_button("🔑 Log in", type="primary")
+            st.caption("New here? Choose **📝 Sign up** above to create your free account.")
+            if go_login:
+                err = do_login(u, p)
+                st.error(err) if err else st.rerun()
+        else:
+            with st.form("signup_form"):
+                st.markdown("#### 🎉 Create your account")
+                u = st.text_input("👤 Choose a username", help="3-30 characters: letters, numbers, . _ -")
+                p = st.text_input("🔒 Choose a password", type="password", help="At least 8 characters")
+                p2 = st.text_input("🔁 Repeat the password", type="password")
+                code = st.text_input("🎟️ Invite code") if SIGNUP_CODE else ""
+                go_sign = st.form_submit_button("🚀 Create account", type="primary")
+            st.caption("Already have an account? Choose **🔑 Login** above.")
+            if go_sign:
+                err = do_signup(u, p, p2, code)
+                st.error(err) if err else st.rerun()
+        st.caption("☁️ Your account is saved in the online database." if USE_MONGO
+                   else "💾 Accounts are saved in a file on this computer (postpilot.db).")
+
+
+if not S.get("user"):
+    auth_page()
     st.stop()
 
-
-# ---------- storage ----------
-def load_history():
-    if HISTORY_MODE == "session":
-        return []
-    try:
-        return json.loads(HISTORY_FILE.read_text(encoding="utf-8"))
-    except Exception:
-        return []
-
-
-def save_history():
-    S.history = S.history[:30]
-    for it in S.history[6:]:  # keep the file small: only the newest few keep their AI picture
-        it.pop("img", None)
-    if HISTORY_MODE == "session":
-        return
-    try:
-        HISTORY_FILE.write_text(json.dumps(S.history, ensure_ascii=False), encoding="utf-8")
-    except Exception:
-        pass
-
-
-S.setdefault("history", load_history())
+S.setdefault("history", [])
 S.setdefault("cur", None)
 S.setdefault("post", "")
 S.setdefault("post_edit", "")
@@ -129,6 +295,18 @@ S.setdefault("fav_only", False)
 S.setdefault("gen_count", 0)
 
 
+def persist(item):
+    try:
+        db_save_item(S.user, item)
+        extra = S.history[MAX_ITEMS:]
+        if extra:
+            S.history = S.history[:MAX_ITEMS]
+            for x in extra:
+                db_delete_item(S.user, x["id"])
+    except Exception as e:
+        st.warning(f"⚠️ Couldn't save to the database: {e}")
+
+
 def current_item():
     return next((x for x in S.history if x["id"] == S.cur), None)
 
@@ -136,11 +314,11 @@ def current_item():
 def save_item(**patch):
     item = current_item()
     if item is None:
-        item = {"id": f"p{int(time.time() * 1000)}", "ts": time.time()}
+        item = {"id": f"p{int(time.time() * 1000)}{secrets.token_hex(2)}", "ts": time.time()}
         S.cur = item["id"]
         S.history.insert(0, item)
     item.update(patch)
-    save_history()
+    persist(item)
 
 
 # ---------- callbacks ----------
@@ -159,14 +337,20 @@ def open_item(pid):
 
 def delete_item(pid):
     S.history = [x for x in S.history if x["id"] != pid]
-    save_history()
+    try:
+        db_delete_item(S.user, pid)
+    except Exception as e:
+        st.warning(f"⚠️ Couldn't delete from the database: {e}")
     if S.cur == pid:
         new_post()
 
 
 def clear_all():
     S.history = []
-    save_history()
+    try:
+        db_clear(S.user)
+    except Exception as e:
+        st.warning(f"⚠️ Couldn't clear the database: {e}")
     new_post()
 
 
@@ -179,7 +363,7 @@ def toggle_fav():
     it = current_item()
     if it:
         it["fav"] = not it.get("fav", False)
-        save_history()
+        persist(it)
 
 
 def edit_post():
@@ -331,6 +515,9 @@ document.getElementById('b').onclick=function(){{var im=new Image();im.onload=fu
 # ---------- sidebar ----------
 with st.sidebar:
     st.markdown("## 🚀 PostPilot")
+    u1, u2 = st.columns([3, 2])
+    u1.caption(f"👤 **{S.user}**")
+    u2.button("🚪 Log out", on_click=logout, key="logout")
     st.button("➕ New post", type="primary", on_click=new_post, key="new")
     if not (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")):
         st.text_input("🔑 Gemini API key (free)", type="password", key="api_key",
