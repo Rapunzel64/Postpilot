@@ -1,0 +1,5 @@
+.env
+postpilot.db
+history.json
+__pycache__
+.streamlit/secrets.toml
