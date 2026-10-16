@@ -47,9 +47,9 @@ TONES = {
     "Thought leadership": "🧠"
 }
 LENGTHS = {
-    "Short": ("⚡Short (~80 words)"),
-    "Medium": ("⭐Medium (~150 words)"),
-    "Long": ("🏆Long (~250 words)")
+    "Short": ("⚡", "Short (~80 words)"),
+    "Medium": ("⭐", "Medium (~150 words)"),
+    "Long": ("🏆", "Long (~250 words)")
 }
 OPTS = {
     "emoji": "😎 Emojis",
@@ -405,6 +405,188 @@ div[data-testid="stFormSubmitButton"] button[kind^="primary"] {
     color: #0a66c2 !important;
     border-bottom: 2px solid #0a66c2 !important;
 }
+/* ===== Page colour: soft blue-grey (instead of pure white) that matches the sidebar and hero ===== */
+.stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
+    background: #E8EEF6 !important;
+}
+[data-testid="stHeader"] { background: transparent !important; }
+
+/* Streamlit leaves ~6rem of empty space above the first element; keep just enough to clear the top bar */
+[data-testid="stMainBlockContainer"], .block-container {
+    padding-top: 3.75rem !important;
+    padding-bottom: 2.5rem !important;
+}
+/* The CSS block itself is an invisible element that still adds a gap above the hero */
+[data-testid="stElementContainer"]:has(> [data-testid="stMarkdown"] style) { display: none !important; }
+/* Hidden helper used to remember the login */
+.st-key-cookie_writer { position: absolute; height: 0; width: 0; overflow: hidden; opacity: 0; pointer-events: none; }
+
+/* Form fields: white, with a soft blue-grey border, so they stand out on the tinted page */
+[data-testid="stMain"] [data-baseweb="input"],
+[data-testid="stMain"] [data-baseweb="base-input"],
+[data-testid="stMain"] [data-baseweb="textarea"],
+[data-testid="stMain"] [data-baseweb="select"] > div,
+[data-testid="stMain"] [data-testid="stTextInputRootElement"],
+[data-testid="stMain"] [data-testid="stTextAreaRootElement"] {
+    background: #ffffff !important;
+    border-color: #c7d3e3 !important;
+}
+[data-testid="stMain"] textarea, [data-testid="stMain"] input { background: #ffffff !important; }
+[data-testid="stMain"] [data-baseweb="input"]:focus-within,
+[data-testid="stMain"] [data-baseweb="textarea"]:focus-within,
+[data-testid="stMain"] [data-baseweb="select"] > div:focus-within { border-color: #0a66c2 !important; }
+
+/* Option chips (tone, length, include) */
+[data-testid="stMain"] button[data-testid="stBaseButton-pills"] {
+    background: #ffffff !important;
+    border: 1px solid #c7d3e3 !important;
+    color: #334155 !important;
+}
+[data-testid="stMain"] button[data-testid="stBaseButton-pills"]:hover { border-color: #0a66c2 !important; color: #0a66c2 !important; }
+[data-testid="stMain"] button[data-testid="stBaseButton-pillsActive"] {
+    background: #dbeafe !important;
+    border: 1px solid #0a66c2 !important;
+    color: #0a4f99 !important;
+}
+button[data-testid="stBaseButton-segmented_controlActive"] {
+    background: #dbeafe !important;
+    border-color: #0a66c2 !important;
+    color: #0a4f99 !important;
+}
+[data-baseweb="tab-highlight"] { background-color: #0a66c2 !important; }
+
+/* Buttons and panels */
+[data-testid="stMain"] .stButton > button[kind="secondary"],
+[data-testid="stMain"] [data-testid="stPopover"] > button,
+[data-testid="stMain"] .stDownloadButton > button {
+    background: #ffffff !important;
+    border: 1px solid #c7d3e3 !important;
+    color: #1e293b !important;
+}
+[data-testid="stMain"] .stButton > button[kind="secondary"]:hover,
+[data-testid="stMain"] [data-testid="stPopover"] > button:hover,
+[data-testid="stMain"] .stDownloadButton > button:hover { border-color: #0a66c2 !important; color: #0a66c2 !important; }
+[data-testid="stMain"] [data-testid="stExpander"] {
+    background: #ffffff !important;
+    border: 1px solid #d3deec !important;
+    border-radius: 12px !important;
+}
+[data-testid="stMain"] [data-testid="stExpander"] summary { background: transparent !important; }
+.stTabs [data-baseweb="tab-list"] { border-bottom-color: #c7d3e3 !important; }
+[data-testid="stPopoverBody"] { background: #ffffff !important; border: 1px solid #d3deec !important; }
+
+/* ===== Hero banner that also holds the Create post action ===== */
+.st-key-hero_wrap {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #0a66c2 100%);
+    border-radius: 16px;
+    padding: 24px 30px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.15), 0 8px 10px -6px rgba(10, 102, 194, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-family: "Isometra", serif;
+}
+.st-key-hero_wrap h1 {
+    color: #ffffff !important;
+    margin: 0 0 6px !important;
+    padding: 0 !important;
+    font-size: 2.05rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em;
+    font-family: "Isometra", serif;
+}
+.st-key-hero_wrap p {
+    margin: 0 !important;
+    color: #e2e8f0 !important;
+    font-size: 1.02rem !important;
+    line-height: 1.5;
+    max-width: 720px;
+}
+.hero-badges { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.st-key-hero_wrap .st-key-top_create_post .stButton > button[kind="primary"] {
+    background: #ffffff !important;
+    color: #0a66c2 !important;
+    border: 0 !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 14px rgba(2, 6, 23, 0.25) !important;
+}
+.st-key-hero_wrap .st-key-top_create_post .stButton > button[kind="primary"] * { color: #0a66c2 !important; }
+.st-key-hero_wrap .st-key-top_create_post .stButton > button[kind="primary"]:hover {
+    background: #e8f1fb !important;
+    box-shadow: 0 6px 18px rgba(2, 6, 23, 0.3) !important;
+}
+
+/* ===== Sidebar: one navy family with a LinkedIn-blue accent ===== */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #14263f 0%, #0f1b2e 48%, #0b1220 100%) !important;
+    border-right: 1px solid rgba(148, 163, 184, 0.16) !important;
+}
+section[data-testid="stSidebar"] * { color: #e8eef6; }
+section[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] * { color: #b4c2d4 !important; opacity: 1 !important; }
+section[data-testid="stSidebar"] hr { border-color: rgba(148, 163, 184, 0.16) !important; }
+
+/* Content library: expanders, nested expanders, search box and buttons share one look */
+section[data-testid="stSidebar"] [data-testid="stExpander"] {
+    background: rgba(255, 255, 255, 0.045) !important;
+    border-color: rgba(148, 163, 184, 0.22) !important;
+    border-radius: 12px !important;
+}
+section[data-testid="stSidebar"] [data-testid="stExpander"] details,
+section[data-testid="stSidebar"] [data-testid="stExpander"] details[open] { background: transparent !important; }
+section[data-testid="stSidebar"] [data-testid="stExpander"] summary,
+section[data-testid="stSidebar"] [data-testid="stExpander"] details[open] > summary {
+    background: transparent !important;
+    color: #e8eef6 !important;
+    opacity: 1 !important;
+    border-radius: 12px !important;
+}
+section[data-testid="stSidebar"] [data-testid="stExpander"] summary:hover { background: rgba(255, 255, 255, 0.07) !important; }
+section[data-testid="stSidebar"] [data-testid="stExpander"] summary *,
+section[data-testid="stSidebar"] [data-testid="stExpander"] summary svg { color: #e8eef6 !important; fill: #e8eef6 !important; opacity: 1 !important; }
+section[data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpander"] { background: rgba(255, 255, 255, 0.04) !important; }
+section[data-testid="stSidebar"] [data-testid="stExpanderDetails"] { padding-left: 0.6rem !important; padding-right: 0.6rem !important; }
+section[data-testid="stSidebar"] [data-testid="stExpander"] .stButton > button { padding: 0.3rem 0.4rem !important; font-size: 0.82rem !important; white-space: nowrap; }
+/* Open / Delete buttons of a saved post: stacked, so the labels are never cut off */
+section[data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpander"] [data-testid="stHorizontalBlock"] { flex-direction: column !important; gap: 0.4rem !important; }
+section[data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpander"] [data-testid="stColumn"] { width: 100% !important; flex: 1 1 100% !important; min-width: 0 !important; }
+section[data-testid="stSidebar"] [data-testid="stTextInputRootElement"],
+section[data-testid="stSidebar"] [data-baseweb="input"],
+section[data-testid="stSidebar"] [data-baseweb="base-input"] {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border-color: rgba(148, 163, 184, 0.3) !important;
+}
+section[data-testid="stSidebar"] input {
+    background: transparent !important;
+    color: #e8eef6 !important;
+    -webkit-text-fill-color: #e8eef6 !important;
+    border: 0 !important;
+}
+section[data-testid="stSidebar"] input::placeholder { color: #8ea0b6 !important; opacity: 1 !important; -webkit-text-fill-color: #8ea0b6 !important; }
+section[data-testid="stSidebar"] .stButton > button {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #e8eef6 !important;
+    border-color: rgba(148, 163, 184, 0.24) !important;
+}
+section[data-testid="stSidebar"] .stButton > button:hover {
+    background: rgba(10, 102, 194, 0.3) !important;
+    border-color: #4aa3ef !important;
+    color: #ffffff !important;
+}
+section[data-testid="stSidebar"] .stButton > button:disabled { opacity: 0.45 !important; }
+section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
+    background: #0a66c2 !important;
+    border-color: #0a66c2 !important;
+    box-shadow: 0 4px 14px rgba(10, 102, 194, 0.35) !important;
+}
+section[data-testid="stSidebar"] .stButton > button[kind="primary"]:hover { background: #0b73d9 !important; border-color: #4aa3ef !important; }
+section[data-testid="stSidebar"] .st-key-sidebar_profile_footer {
+    background: linear-gradient(180deg, rgba(11, 18, 32, 0), #0b1220 24%) !important;
+    border-top-color: rgba(148, 163, 184, 0.2) !important;
+}
+.profile-mini-card { background: rgba(255, 255, 255, 0.06) !important; border-color: rgba(148, 163, 184, 0.24) !important; }
+.profile-mini-name { color: #f8fafc !important; }
+.profile-mini-handle { color: #7cc0ff !important; }
+.profile-mini-sub { color: #aebdd0 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -440,6 +622,9 @@ def _lite():
     con.execute("CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, salt TEXT NOT NULL, pw_hash TEXT NOT NULL, created REAL)")
     con.execute("CREATE TABLE IF NOT EXISTS posts (id TEXT PRIMARY KEY, username TEXT NOT NULL, ts REAL, data TEXT NOT NULL)")
     con.execute("CREATE INDEX IF NOT EXISTS posts_user ON posts(username)")
+    con.execute("""CREATE TABLE IF NOT EXISTS auth_sessions (
+        token_hash TEXT PRIMARY KEY, username TEXT NOT NULL, expires REAL NOT NULL, created REAL NOT NULL
+    )""")
     con.execute("""CREATE TABLE IF NOT EXISTS user_profiles (
         username TEXT PRIMARY KEY, full_name TEXT DEFAULT '', headline TEXT DEFAULT '',
         location TEXT DEFAULT '', email TEXT DEFAULT '', website TEXT DEFAULT '',
@@ -573,6 +758,95 @@ def log_in(u):
     S.history = db_load_history(u)
 
 
+# ---------- Stay signed in on this device ----------
+# A random token is stored in a browser cookie. Only its SHA-256 hash is saved in the database, so the
+# database never holds a usable token. The token is removed on log out and expires after SESSION_DAYS.
+COOKIE_NAME = "postpilot_session"
+SESSION_DAYS = 30
+
+
+def _token_hash(token):
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def db_create_session(u):
+    token = secrets.token_urlsafe(32)
+    now = time.time()
+    h = _token_hash(token)
+    if USE_MONGO:
+        c = _mongo().auth_sessions
+        c.delete_many({"expires": {"$lt": now}})
+        c.insert_one({"_id": h, "username": u, "expires": now + SESSION_DAYS * 86400, "created": now})
+    else:
+        _lite_run("DELETE FROM auth_sessions WHERE expires < ?", (now,))
+        _lite_run("INSERT INTO auth_sessions VALUES (?,?,?,?)", (h, u, now + SESSION_DAYS * 86400, now))
+    return token
+
+
+def db_session_user(token):
+    h = _token_hash(token)
+    if USE_MONGO:
+        d = _mongo().auth_sessions.find_one({"_id": h})
+        return d["username"] if d and d["expires"] > time.time() else None
+    rows = _lite_run("SELECT username, expires FROM auth_sessions WHERE token_hash=?", (h,), fetch=True)
+    return rows[0][0] if rows and rows[0][1] > time.time() else None
+
+
+def db_delete_session(token):
+    h = _token_hash(token)
+    if USE_MONGO:
+        _mongo().auth_sessions.delete_one({"_id": h})
+    else:
+        _lite_run("DELETE FROM auth_sessions WHERE token_hash=?", (h,))
+
+
+def remember_this_device():
+    """Called right after a successful login: creates the token and asks the page to store it as a cookie."""
+    try:
+        token = db_create_session(S.user)
+        S["_session_token"] = token
+        S["_set_cookie"] = token
+    except Exception:
+        pass  # staying signed in is optional, so a database hiccup must not block the login
+
+
+def try_auto_login():
+    """Runs once per browser session: signs the user in again if a valid cookie is present."""
+    if S.get("_auto_tried"):
+        return
+    S["_auto_tried"] = True
+    try:
+        token = st.context.cookies.get(COOKIE_NAME)
+        if token:
+            u = db_session_user(token)
+            if u and db_get_user(u):
+                log_in(u)
+                S["_session_token"] = token
+    except Exception:
+        pass
+
+
+def emit_cookie(value):
+    """Writes (or, with an empty value, removes) the cookie in the browser through a tiny hidden frame."""
+    max_age = SESSION_DAYS * 86400 if value else 0
+    page = f"""<script>
+    (function () {{
+      var line = '{COOKIE_NAME}={value}; Path=/; Max-Age={max_age}; SameSite=Lax';
+      try {{
+        var secure = (window.parent.location.protocol === 'https:') ? '; Secure' : '';
+        window.parent.document.cookie = line + secure;
+      }} catch (e) {{
+        document.cookie = line;
+      }}
+    }})();
+    </script>"""
+    with st.container(key="cookie_writer"):
+        if hasattr(st, "iframe"):
+            st.iframe(page, height=1)
+        else:
+            components.html(page, height=1)
+
+
 def do_signup(u, pw, pw2, code):
     u = (u or "").strip().lower()
     if not USERNAME_RE.match(u):
@@ -615,7 +889,19 @@ def do_login(u, pw):
 
 
 def logout():
+    token = S.get("_session_token")
+    if not token:
+        try:
+            token = st.context.cookies.get(COOKIE_NAME)
+        except Exception:
+            token = None
+    if token:
+        try:
+            db_delete_session(token)
+        except Exception:
+            pass
     S.clear()
+    S["_clear_cookie"] = True
 
 
 def auth_page():
@@ -644,6 +930,7 @@ def auth_page():
                 st.markdown("#### 👋 Welcome back")
                 u = st.text_input("👤 Username")
                 p = st.text_input("🔒 Password", type="password")
+                remember = st.checkbox("Keep me signed in on this device", value=True)
                 go_login = st.form_submit_button("🔑 Log in", type="primary")
             st.caption("New here? Choose **📝 Sign up** above to create your free account.")
             if go_login:
@@ -651,6 +938,8 @@ def auth_page():
                 if err:
                     st.error(err)
                 else:
+                    if remember:
+                        remember_this_device()
                     st.rerun()
         else:
             with st.form("signup_form"):
@@ -666,13 +955,20 @@ def auth_page():
                 if err:
                     st.error(err)
                 else:
+                    remember_this_device()
                     st.rerun()
         st.caption("☁️ Online database connected." if USE_MONGO else "💾 Saved locally in postpilot.db.")
 
 
+if S.pop("_clear_cookie", False):
+    emit_cookie("")
+if not S.get("user"):
+    try_auto_login()
 if not S.get("user"):
     auth_page()
     st.stop()
+if S.get("_set_cookie"):
+    emit_cookie(S.pop("_set_cookie"))
 
 # Session State Defaults
 S.setdefault("history", [])
@@ -1012,23 +1308,23 @@ with st.sidebar:
                   on_click=lambda: S.__setitem__("page", "profile"))
         st.button("↪ Log out", on_click=logout, key="logout", use_container_width=True)
 
-# Main action stays in the page canvas, so it remains available when the sidebar is collapsed.
-top_action, top_hint = st.columns([1.35, 5], vertical_alignment="center")
-with top_action:
-    if st.button("＋  Create post", type="primary", key="top_create_post", use_container_width=True):
-        S.page = "studio"
-        new_post()
-        st.rerun()
-with top_hint:
-    st.caption("Create, organize, and publish your LinkedIn content", unsafe_allow_html=True)
+# Hero banner. The Create post action lives inside it so it stays available when the sidebar is collapsed.
+def render_hero(title_html, subtitle_html, badges_html=""):
+    with st.container(key="hero_wrap"):
+        hero_text, hero_side = st.columns([2.4, 1.8], vertical_alignment="center", gap="large")
+        with hero_text:
+            st.markdown(f"<h1>{title_html}</h1><p>{subtitle_html}</p>", unsafe_allow_html=True)
+        with hero_side:
+            if badges_html:
+                st.markdown(f'<div class="hero-badges">{badges_html}</div>', unsafe_allow_html=True)
+            if st.button("＋  Create post", type="primary", key="top_create_post", use_container_width=True):
+                S.page = "studio"
+                new_post()
+                st.rerun()
+
 
 if S.get("page") == "profile":
-    st.markdown("""
-    <div class="hero">
-        <h1>👤 My Profile</h1>
-        <p>Manage your PostPilot profile details and check your LinkedIn connection.</p>
-    </div>
-    """, unsafe_allow_html=True)
+    render_hero("👤 My Profile", "Manage your PostPilot profile details and check your LinkedIn connection.")
     prof_left, prof_right = st.columns([3, 2], gap="large")
     with prof_left:
         st.markdown("### Profile information")
@@ -1081,20 +1377,14 @@ u_name = S.get("user") or ""
 scheduled_items = scheduler.get_user_scheduled_posts(u_name) if u_name else []
 pending_count = sum(1 for x in scheduled_items if x.get("status") == "scheduled")
 
-st.markdown(f'''
-<div class="hero">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <div>
-            <h1>PostPilot 🚀</h1>
-            <p>Human-crafted LinkedIn Post Studio • AI Writing & Visuals • 1-Click Direct Upload & Automated Scheduling</p>
-        </div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            {'<span class="badge-pill badge-success">🟢 ' + html.escape(li_display_name) + '</span>' if has_user_token else '<span class="badge-pill badge-warning">⚪ LinkedIn Disconnected</span>'}
-            <span class="badge-pill badge-info">⏰ {pending_count} Scheduled in Queue</span>
-        </div>
-    </div>
-</div>
-''', unsafe_allow_html=True)
+_hero_badges = (
+    ('<span class="badge-pill badge-success">🟢 ' + html.escape(li_display_name) + '</span>' if has_user_token
+     else '<span class="badge-pill badge-warning">⚪ LinkedIn Disconnected</span>')
+    + f'<span class="badge-pill badge-info">⏰ {pending_count} Scheduled in Queue</span>'
+)
+render_hero("PostPilot 🚀",
+            "Human-crafted LinkedIn Post Studio • AI Writing & Visuals • 1-Click Direct Upload & Automated Scheduling",
+            _hero_badges)
 
 # Top navigation tabs for clean separation of concerns
 tab_studio, tab_schedule, tab_linkedin = st.tabs([
@@ -1106,24 +1396,6 @@ tab_studio, tab_schedule, tab_linkedin = st.tabs([
 # ==================== TAB 1: POST STUDIO ====================
 with tab_studio:
     left, right = st.columns([5, 6], gap="large")
-
-    with left:
-        st.markdown("#### Post Blueprint")
-        st.selectbox("📑 Start from a template", [NONE_TPL] + list(TEMPLATES), key="tpl", on_change=apply_template)
-        st.text_area("What is your post about?", key="topic", height=130,
-                     placeholder="e.g. Led a migration from monolithic architecture to microservices. 3 surprising lessons my engineering team learned along the way...")
-
-        st.markdown("#### 🎭 Voice & Structure")
-        st.pills("Tone of voice", list(TONES), key="tone", format_func=lambda t: f"{TONES[t]} {t}")
-        st.pills("Length", list(LENGTHS), key="length", format_func=lambda n: f"{LENGTHS[n][0]} {n}")
-        st.pills("Include in post", list(OPTS), selection_mode="multi", key="opts", format_func=OPTS.get)
-
-        st.markdown("#### 🎨 Visual Asset")
-        s1, s2 = st.columns(2)
-        s1.selectbox("Image Style", list(STYLES), key="style", format_func=lambda n: f"{STYLES[n][0]} {n}")
-        s2.selectbox("Source", list(SOURCES), key="source", format_func=SOURCES.get)
-
-        go = st.button("✨ Generate LinkedIn Post", type="primary")
 
     def run(rewrite=False):
         topic = S.topic.strip()
@@ -1168,19 +1440,43 @@ with tab_studio:
         except Exception as e:
             st.error(f"Couldn't create image: {e}")
 
-    if go:
-        with left:
+    with left:
+        st.markdown("#### Post Blueprint")
+        st.selectbox("📑 Start from a template", [NONE_TPL] + list(TEMPLATES), key="tpl", on_change=apply_template)
+        st.text_area("What is your post about?", key="topic", height=130,
+                     placeholder="e.g. Led a migration from monolithic architecture to microservices. 3 surprising lessons my engineering team learned along the way...")
+
+        st.markdown("#### 🎭 Voice & Structure")
+        st.pills("Tone of voice", list(TONES), key="tone", format_func=lambda t: f"{TONES[t]} {t}")
+        st.pills("Length", list(LENGTHS), key="length", format_func=lambda n: f"{LENGTHS[n][0]} {n}")
+        st.pills("Include in post", list(OPTS), selection_mode="multi", key="opts", format_func=OPTS.get)
+
+        st.markdown("#### 🎨 Visual Asset")
+        s1, s2 = st.columns(2)
+        s1.selectbox("Image Style", list(STYLES), key="style", format_func=lambda n: f"{STYLES[n][0]} {n}")
+        s2.selectbox("Source", list(SOURCES), key="source", format_func=SOURCES.get)
+
+        go = st.button("✨ Generate LinkedIn Post", type="primary")
+
+        if go:
             run()
 
-    with right:
-        # Realistic Live Preview
-        author_display = user_li.get("linkedin_name") or "You"
-        headline_display = "LinkedIn Creator • PostPilot" if has_user_token else "Your Headline • PostPilot"
-        
-        st.markdown(card_html(S.post, S.svg, S.img, author_name=author_display, author_headline=headline_display), unsafe_allow_html=True)
-        
+        # Refine + publish controls sit right under Generate, so both columns stay about the same height
         if S.post:
-            st.caption(f"📊 Character Count: **{len(S.post)}** / 3,000 characters")
+            # Secondary Refinement Toolbar
+            t1, t2, t3 = st.columns(3)
+            rewrite = t1.button("🔄 Rewrite Post", key="rw")
+            newimg = t2.button("🎲 New Visual", key="ni")
+            cur = current_item()
+            fav = bool(cur and cur.get("fav"))
+            t3.button("⭐ Saved" if fav else "☆ Favorite", key="fav", on_click=toggle_fav)
+
+            if rewrite:
+                run(rewrite=True)
+            if newimg:
+                new_image()
+
+            st.divider()
 
             # ---------- Automation Action Hub: Direct Publish & Scheduling ----------
             st.markdown("### 🚀 Publish & Automation Hub")
@@ -1260,21 +1556,15 @@ with tab_studio:
                             time.sleep(1)
                             st.rerun()
 
-            st.divider()
-
-            # Secondary Refinement Toolbar
-            t1, t2, t3 = st.columns(3)
-            rewrite = t1.button("🔄 Rewrite Post", key="rw")
-            newimg = t2.button("🎲 New Visual", key="ni")
-            cur = current_item()
-            fav = bool(cur and cur.get("fav"))
-            t3.button("⭐ Saved" if fav else "☆ Favorite", key="fav", on_click=toggle_fav)
-
-            if rewrite:
-                with left:
-                    run(rewrite=True)
-            if newimg:
-                new_image()
+    with right:
+        # Realistic Live Preview
+        author_display = user_li.get("linkedin_name") or "You"
+        headline_display = "LinkedIn Creator • PostPilot" if has_user_token else "Your Headline • PostPilot"
+        
+        st.markdown(card_html(S.post, S.svg, S.img, author_name=author_display, author_headline=headline_display), unsafe_allow_html=True)
+        
+        if S.post:
+            st.caption(f"📊 Character Count: **{len(S.post)}** / 3,000 characters")
 
             with st.expander("✏️ Edit Post Content"):
                 st.text_area("Make direct edits to the text below", key="post_edit", height=200, on_change=edit_post)
